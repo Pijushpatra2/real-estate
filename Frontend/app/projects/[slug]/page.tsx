@@ -1,0 +1,1502 @@
+// "use client";
+
+// import { useState, useEffect, use } from "react";
+// import { useParams, useRouter } from "next/navigation";
+// import Image from "next/image";
+// import Link from "next/link";
+// import { motion } from "framer-motion";
+// import {
+//   Building2,
+//   Home,
+//   MapPin,
+//   ArrowLeft,
+//   Check,
+//   Phone,
+//   Mail,
+//   Calendar,
+//   ChevronLeft,
+//   ChevronRight,
+// } from "lucide-react";
+// import api, { MEDIA_BASE_URL } from "@/lib/axiosInstance";
+// import { FloorPlansDisplay } from "@/components/FloorPlansDisplay";
+// import { AmenitiesDisplay } from "@/components/AmenitiesDisplay";
+// import { Badge } from "@/components/ui/badge";
+// import { Separator } from "@radix-ui/react-dropdown-menu";
+
+// interface Project {
+//   id: number;
+//   prop_title: string;
+//   prop_type: string;
+//   area_location: string;
+//   prop_desc: string;
+//   long_description: string;
+//   sale_rent_price: string;
+//   prop_status: string;
+//   prop_year_built: string;
+//   features: string[];
+//   prop_image: string;
+//   contact_person: string;
+//   contact_email: string;
+//   contact_phone: string;
+//   prop_bedrooms?: number;
+//   prop_bathrooms?: number;
+//   prop_land_size?: string;
+// }
+
+// interface GalleryImage {
+//   img_name: string; // This is the gallery image field name
+//   [key: string]: any;
+// }
+
+// export default function ProjectDetailPage() {
+//   const params = useParams(); // ✅ Correct way in client component
+//   const slug = params?.slug as string;
+//   const projectId = slug?.split("-").pop(); // extract ID from slug
+//   const [activeImageIndex, setActiveImageIndex] = useState(0);
+//   const [project, setProject] = useState<Project | null>(null);
+//   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [similarProperties, setSimilarProperties] = useState<Project[]>([]);
+//   const router = useRouter();
+
+//   // Fetch project data based on the projectId from the URL
+//   useEffect(() => {
+//     const fetchProjectData = async () => {
+//       try {
+//         setIsLoading(true);
+//         setError(null);
+
+//         if (!projectId || isNaN(Number(projectId))) {
+//           throw new Error("Invalid project ID");
+//         }
+
+//         // Fetch both property data and gallery images in parallel
+//         const [propertyRes, galleryRes] = await Promise.all([
+//           api.get(`/properties/get/${projectId}`),
+//           api.get(`/media/get/${projectId}`),
+//         ]);
+
+//         if (!propertyRes.data) {
+//           throw new Error("No property data received");
+//         }
+
+//         const propertyData = propertyRes.data;
+//         const galleryData = galleryRes.data || [];
+
+//         if (!propertyData) {
+//           throw new Error("Project data not found in response");
+//         }
+
+//         // Transform data for consistent frontend usage
+//         setProject({
+//           id: propertyData.property_id || Number(projectId),
+//           prop_title: propertyData.prop_title,
+//           prop_type: propertyData.prop_type.toLowerCase(),
+//           area_location: propertyData.area_location || "Location not specified",
+//           prop_desc: propertyData.prop_desc || "No description available",
+//           long_description:
+//             propertyData.long_description ||
+//             propertyData.prop_desc ||
+//             "No detailed description available",
+//           sale_rent_price:
+//             propertyData.sale_rent_price || "Price not available",
+//           prop_status: propertyData.prop_status || "Status not specified",
+//           prop_year_built: propertyData.prop_year_built || "N/A",
+//           features: parseFeatures(propertyData.features),
+//           prop_image: propertyData.prop_image || "", // Store the main image
+//           contact_person: propertyData.contact_person || "Sales Representative",
+//           contact_email: propertyData.contact_email || "info@evernalgroup.com",
+//           contact_phone: propertyData.contact_phone || "+91 8697891111",
+//           prop_bedrooms: propertyData.prop_bedrooms,
+//           prop_bathrooms: propertyData.prop_bathrooms,
+//           prop_land_size: propertyData.prop_land_size,
+//         });
+
+//         setGalleryImages(galleryData);
+//       } catch (err) {
+//         console.error("Error fetching project:", err);
+//         setError(
+//           err instanceof Error ? err.message : "Failed to load project details"
+//         );
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
+
+//     fetchProjectData();
+//   }, [projectId]);
+
+//   // Fetch similar properties based on the project type
+//   useEffect(() => {
+//     const fetchSimilarProperties = async () => {
+//       if (!project?.prop_type) return;
+
+//       try {
+//         const res = await api.get(`/properties/get/all`, {
+//           params: {
+//             type: project.prop_type,
+//             exclude: project.id,
+//             limit: 4,
+//           },
+//         });
+
+//         if (res.data && Array.isArray(res.data)) {
+//           setSimilarProperties(res.data);
+//         }
+//       } catch (err) {
+//         console.error("Error fetching similar properties:", err);
+//       }
+//     };
+
+//     if (project) {
+//       fetchSimilarProperties();
+//     }
+//   }, [project]);
+
+//   // Helper function to parse features
+//   const parseFeatures = (features: any): string[] => {
+//     if (!features) return [];
+//     if (Array.isArray(features)) return features;
+//     if (typeof features === "string")
+//       return features.split(",").map((f) => f.trim());
+//     return [];
+//   };
+
+//   // Combine main image and gallery images with proper URL construction
+//   const getAllImages = () => {
+//     const images = [];
+
+//     // Add main property image if it exists
+//     if (project?.prop_image) {
+//       images.push({
+//         url: `${MEDIA_BASE_URL}${project.prop_image}`,
+//         alt: `${project.prop_title} - Main Image`,
+//       });
+//     }
+
+//     // Add gallery images if they exist
+//     if (galleryImages.length > 0) {
+//       galleryImages.forEach((img) => {
+//         if (img.img_name) {
+//           images.push({
+//             url: `${MEDIA_BASE_URL}${img.img_name}`,
+//             alt: `${project?.prop_title} - Gallery Image`,
+//           });
+//         }
+//       });
+//     }
+
+//     // Fallback to placeholder if no images
+//     return images.length > 0
+//       ? images
+//       : [
+//           {
+//             url: "/placeholder.svg",
+//             alt: "No image available",
+//           },
+//         ];
+//   };
+
+//   const nextImage = () => {
+//     const images = getAllImages();
+//     setActiveImageIndex((prev) => (prev + 1) % images.length);
+//   };
+
+//   const prevImage = () => {
+//     const images = getAllImages();
+//     setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
+//   };
+
+//   if (isLoading) {
+//     return (
+//  <div className="pt-20">
+//       <div className="container mx-auto px-4 py-8 animate-pulse">
+//         {/* Back link */}
+//         <div className="h-5 w-32 bg-gray-200 rounded mb-6"></div>
+
+//         {/* Header section */}
+//         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+//           <div className="h-8 w-2/3 bg-gray-200 rounded mb-3"></div>
+//           <div className="flex gap-4 flex-wrap">
+//             <div className="h-5 w-40 bg-gray-100 rounded" />
+//             <div className="h-5 w-24 bg-gray-100 rounded" />
+//             <div className="h-5 w-24 bg-gray-100 rounded" />
+//           </div>
+//         </div>
+
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+//           {/* Left: Image and Description */}
+//           <div className="lg:col-span-2 space-y-6">
+//             {/* Main image */}
+//             <div className="h-[300px] md:h-[400px] lg:h-[500px] bg-gray-300 rounded-xl" />
+
+//             {/* Thumbnail gallery */}
+//             <div className="grid grid-cols-4 gap-2">
+//               {Array.from({ length: 4 }).map((_, i) => (
+//                 <div key={i} className="h-20 bg-gray-200 rounded" />
+//               ))}
+//             </div>
+
+//             {/* Description */}
+//             <div className="space-y-3">
+//               <div className="h-6 w-40 bg-gray-300 rounded" />
+//               <div className="h-4 w-full bg-gray-200 rounded" />
+//               <div className="h-4 w-5/6 bg-gray-200 rounded" />
+//               <div className="h-4 w-2/3 bg-gray-200 rounded" />
+//             </div>
+
+//             {/* Floor Plans Placeholder */}
+//             <div className="h-40 bg-gray-100 rounded-md" />
+
+//             {/* Amenities Placeholder */}
+//             <div className="h-32 bg-gray-100 rounded-md" />
+//           </div>
+
+//           {/* Right: Contact Form */}
+//           <div className="lg:col-span-1">
+//             <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+//               <div className="h-6 w-40 bg-gray-300 rounded" />
+//               <div className="flex items-center gap-4">
+//                 <div className="w-16 h-16 rounded-full bg-gray-200" />
+//                 <div className="flex-1 space-y-2">
+//                   <div className="h-4 w-24 bg-gray-200 rounded" />
+//                   <div className="h-3 w-16 bg-gray-100 rounded" />
+//                 </div>
+//               </div>
+//               <div className="space-y-3">
+//                 <div className="h-4 w-40 bg-gray-200 rounded" />
+//                 <div className="h-4 w-40 bg-gray-200 rounded" />
+//               </div>
+//               <div className="h-8 bg-gray-300 rounded w-full" />
+//               <div className="h-8 bg-gray-300 rounded w-full" />
+//               <div className="h-8 bg-gray-300 rounded w-full" />
+//               <div className="h-20 bg-gray-300 rounded w-full" />
+//               <div className="h-10 bg-secondary/40 rounded w-full" />
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Similar Properties */}
+//         <div className="mt-12 space-y-4">
+//           <div className="h-6 w-48 bg-gray-300 rounded" />
+//           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+//             {Array.from({ length: 4 }).map((_, i) => (
+//               <div
+//                 key={i}
+//                 className="bg-white rounded-xl overflow-hidden shadow-sm"
+//               >
+//                 <div className="h-48 bg-gray-300" />
+//                 <div className="p-4 space-y-2">
+//                   <div className="h-4 w-3/4 bg-gray-200 rounded" />
+//                   <div className="h-3 w-1/2 bg-gray-100 rounded" />
+//                   <div className="h-4 w-1/3 bg-gray-200 rounded" />
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="pt-20">
+//         <div className="container mx-auto px-4 py-8">
+//           <div className="text-center py-12">
+//             <p className="text-gray-500 text-lg">{error}</p>
+//             <Link
+//               href="/projects"
+//               className="inline-flex items-center text-secondary mt-4"
+//             >
+//               <ArrowLeft className="h-4 w-4 mr-2" />
+//               Back to Projects
+//             </Link>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (!project) {
+//     return (
+//       <div className="pt-20">
+//         <div className="container mx-auto px-4 py-8">
+//           <div className="text-center py-12">
+//             <p className="text-gray-500 text-lg">Project not found</p>
+//             <Link
+//               href="/projects"
+//               className="inline-flex items-center text-secondary mt-4"
+//             >
+//               <ArrowLeft className="h-4 w-4 mr-2" />
+//               Back to Projects
+//             </Link>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   const images = getAllImages();
+//   const statusColor =
+//     project.prop_status.toLowerCase() === "for sale"
+//       ? "bg-lime-500"
+//       : project.prop_status.toLowerCase() === "for rent"
+//       ? "bg-blue-500"
+//       : project.prop_status.toLowerCase() === "sold"
+//       ? "bg-red-500"
+//       : "bg-amber-500";
+
+//   return (
+//     <div className="pt-20">
+//       <div className="container mx-auto px-4 py-8">
+//         <Link
+//           href="/projects"
+//           className="inline-flex items-center text-gray-600 hover:text-secondary mb-6"
+//         >
+//           <ArrowLeft className="h-4 w-4 mr-2" />
+//           Back to Projects
+//         </Link>
+
+//         {/* Property Header */}
+//         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-lg shadow-sm p-4 mb-6">
+//           <div>
+//             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+//               {project.prop_title}
+//             </h1>
+//             <div className="flex items-center flex-wrap gap-3">
+//               <div className="flex items-center">
+//                 <MapPin className="h-5 w-5 text-secondary mr-1" />
+//                 <span className="text-gray-700">{project.area_location}</span>
+//               </div>
+//               <Badge
+//                 className={`${statusColor} hover:${statusColor} text-white`}
+//               >
+//                 {project.prop_status}
+//               </Badge>
+//               <Badge variant="outline" className="bg-white">
+//                 {project.prop_type === "commercial"
+//                   ? "Commercial"
+//                   : "Residential"}
+//               </Badge>
+//             </div>
+//           </div>
+//           <div className="flex flex-col items-end">
+//             <div className="text-3xl font-bold text-secondary">
+//               {project.sale_rent_price.startsWith("₹")
+//                 ? project.sale_rent_price
+//                 : `₹ ${project.sale_rent_price}`}
+//             </div>
+//             <div className="text-sm text-gray-500">
+//               {project.prop_status.toLowerCase().includes("rent")
+//                 ? "per month"
+//                 : ""}
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+//           <div className="lg:col-span-2">
+//             <div className="relative rounded-xl overflow-hidden mb-4 h-[300px] md:h-[400px] lg:h-[500px]">
+//               <Image
+//                 src={images[activeImageIndex].url}
+//                 alt={images[activeImageIndex].alt}
+//                 fill
+//                 className="object-cover"
+//                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+//                 priority
+//               />
+
+//               {images.length > 1 && (
+//                 <>
+//                   <button
+//                     onClick={prevImage}
+//                     className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md z-10"
+//                     aria-label="Previous image"
+//                   >
+//                     <ChevronLeft className="h-6 w-6" />
+//                   </button>
+
+//                   <button
+//                     onClick={nextImage}
+//                     className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md z-10"
+//                     aria-label="Next image"
+//                   >
+//                     <ChevronRight className="h-6 w-6" />
+//                   </button>
+
+//                   <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+//                     {images.map((_, index) => (
+//                       <button
+//                         key={index}
+//                         onClick={() => setActiveImageIndex(index)}
+//                         className={`w-3 h-3 rounded-full transition-all duration-300 ${
+//                           activeImageIndex === index
+//                             ? "bg-sectext-secondary w-10"
+//                             : "bg-white"
+//                         }`}
+//                         aria-label={`Go to image ${index + 1}`}
+//                       />
+//                     ))}
+//                   </div>
+//                 </>
+//               )}
+//             </div>
+
+//             {images.length > 1 && (
+//               <div className="grid grid-cols-4 gap-2 mb-8">
+//                 {images.map((image, index) => (
+//                   <button
+//                     key={index}
+//                     onClick={() => setActiveImageIndex(index)}
+//                     className={`relative h-20 rounded-md overflow-hidden transition-all ${
+//                       activeImageIndex === index
+//                         ? "ring-2 ring-sectext-secondary"
+//                         : "opacity-80 hover:opacity-100"
+//                     }`}
+//                     aria-label={`View image ${index + 1}`}
+//                   >
+//                     <Image
+//                       src={image.url}
+//                       alt={image.alt}
+//                       fill
+//                       className="object-cover"
+//                     />
+//                   </button>
+//                 ))}
+//               </div>
+//             )}
+
+//             <div>
+//               <div className="mb-6">
+//                 <h2 className="text-xl font-bold mb-2">Description</h2>
+//                 <p className="text-gray-700 mb-4">{project.prop_desc}</p>
+//                 {project.long_description && (
+//                   <p className="text-gray-700">{project.long_description}</p>
+//                 )}
+//               </div>
+//               <FloorPlansDisplay propertyId={project.id} />
+
+//               <AmenitiesDisplay
+//                 propertyId={project.id}
+//                 featuredAmenities={[
+//                   "Swimming Pool",
+//                   "Gym",
+//                   "Parking",
+//                   "24/7 Security",
+//                   "Elevator",
+//                 ]}
+//               />
+//             </div>
+//           </div>
+
+//           <div className="lg:col-span-1 space-y-6">
+//             {/* Contact Card */}
+//             <div className="bg-white rounded-xl shadow-sm overflow-hidden sticky top-24">
+//               <div className="bg-secondary text-white p-4">
+//                 <h3 className="text-xl font-bold">Contact Agent</h3>
+//               </div>
+
+//               <div className="p-6 space-y-6">
+//                 <div className="flex items-center gap-4">
+//                   <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+//                     <svg
+//                       xmlns="http://www.w3.org/2000/svg"
+//                       width="24"
+//                       height="24"
+//                       viewBox="0 0 24 24"
+//                       fill="none"
+//                       stroke="currentColor"
+//                       strokeWidth="2"
+//                       strokeLinecap="round"
+//                       strokeLinejoin="round"
+//                     >
+//                       <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+//                       <circle cx="12" cy="7" r="4"></circle>
+//                     </svg>
+//                   </div>
+//                   <div>
+//                     <h4 className="font-semibold text-lg">
+//                       {project.contact_person}
+//                     </h4>
+//                     <p className="text-gray-500 text-sm">Evernal Group</p>
+//                   </div>
+//                 </div>
+
+//                 <Separator />
+
+//                 <div className="space-y-4">
+//                   <div className="flex items-center">
+//                     <Phone className="h-5 w-5 text-primary mr-3" />
+//                     <a
+//                       href={`tel:${project.contact_phone}`}
+//                       className="text-gray-700 hover:text-primary transition-colors"
+//                     >
+//                       {project.contact_phone}
+//                     </a>
+//                   </div>
+
+//                   <div className="flex items-center">
+//                     <Mail className="h-5 w-5 text-primary mr-3" />
+//                     <a
+//                       href={`mailto:${project.contact_email}`}
+//                       className="text-gray-700 hover:text-primary transition-colors"
+//                     >
+//                       {project.contact_email}
+//                     </a>
+//                   </div>
+//                 </div>
+
+//                 <Separator />
+
+//                 {/* Contact Form */}
+//                 <form className="space-y-4">
+//                   <div>
+//                     <label
+//                       htmlFor="name"
+//                       className="block text-sm font-medium text-gray-700 mb-1"
+//                     >
+//                       Your Name
+//                     </label>
+//                     <input
+//                       type="text"
+//                       id="name"
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+//                       placeholder="Enter your name"
+//                     />
+//                   </div>
+
+//                   <div>
+//                     <label
+//                       htmlFor="email"
+//                       className="block text-sm font-medium text-gray-700 mb-1"
+//                     >
+//                       Email Address
+//                     </label>
+//                     <input
+//                       type="email"
+//                       id="email"
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+//                       placeholder="Enter your email"
+//                     />
+//                   </div>
+
+//                   <div>
+//                     <label
+//                       htmlFor="phone"
+//                       className="block text-sm font-medium text-gray-700 mb-1"
+//                     >
+//                       Phone Number
+//                     </label>
+//                     <input
+//                       type="tel"
+//                       id="phone"
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+//                       placeholder="Enter your phone"
+//                     />
+//                   </div>
+
+//                   <div>
+//                     <label
+//                       htmlFor="message"
+//                       className="block text-sm font-medium text-gray-700 mb-1"
+//                     >
+//                       Message
+//                     </label>
+//                     <textarea
+//                       id="message"
+//                       rows={4}
+//                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lime-500"
+//                       placeholder="I'm interested in this property..."
+//                       defaultValue={`I'm interested in ${project.prop_title} (ID: ${project.id}). Please contact me with more information.`}
+//                     ></textarea>
+//                   </div>
+
+//                   <motion.button
+//                     whileHover={{ scale: 1.02 }}
+//                     whileTap={{ scale: 0.98 }}
+//                     className="w-full text-center gap-2 rounded-md px-4 py-3 text-sm font-medium bg-secondary text-white hover:bg-primary transition-colors duration-300"
+//                     type="submit"
+//                   >
+//                     Send Message
+//                   </motion.button>
+//                 </form>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Similar Properties Section */}
+//         <div className="mt-12">
+//           <h2 className="text-2xl font-bold mb-6">Similar Properties</h2>
+//           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+//             {similarProperties.length > 0 ? (
+//               similarProperties.map((item) => (
+//                 <Link
+//                   href={`/projects/${item.property_id}`}
+//                   key={item.property_id}
+//                 >
+//                   <motion.div
+//                     whileHover={{ y: -5 }}
+//                     className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all"
+//                   >
+//                     <div className="relative h-48">
+//                       <Image
+//                         src={
+//                           item.prop_image
+//                             ? `${MEDIA_BASE_URL}${item.prop_image}`
+//                             : "/placeholder.svg"
+//                         }
+//                         alt={item.prop_title}
+//                         fill
+//                         className="object-cover"
+//                       />
+//                       <div className="absolute top-2 right-2">
+//                         <Badge className="bg-secondary text-white">
+//                           {item.prop_status}
+//                         </Badge>
+//                       </div>
+//                     </div>
+//                     <div className="p-4">
+//                       <h3 className="font-bold text-lg mb-1 line-clamp-1">
+//                         {item.prop_title}
+//                       </h3>
+//                       <div className="flex items-center text-gray-500 text-sm mb-2">
+//                         <MapPin className="h-4 w-4 mr-1" />
+//                         <span>{item.area_location}</span>
+//                       </div>
+//                       <div className="text-secondary font-bold">
+//                         ₹ {item.sale_rent_price}
+//                       </div>
+//                     </div>
+//                   </motion.div>
+//                 </Link>
+//               ))
+//             ) : (
+//               <p className="text-gray-500">No similar properties found.</p>
+//             )}
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+// =============================================
+
+"use client";
+
+import { useState, useEffect, use } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  Building2,
+  Home,
+  MapPin,
+  ArrowLeft,
+  Check,
+  Phone,
+  Mail,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import api, { MEDIA_BASE_URL } from "@/lib/axiosInstance";
+import { FloorPlansDisplay } from "@/components/FloorPlansDisplay";
+import { AmenitiesDisplay } from "@/components/AmenitiesDisplay";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@radix-ui/react-dropdown-menu";
+import { toast } from "sonner";
+
+interface FormData {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+}
+
+interface Project {
+  id: number;
+  prop_title: string;
+  prop_type: string;
+  area_location: string;
+  prop_desc: string;
+  long_description: string;
+  sale_rent_price: string;
+  prop_status: string;
+  prop_year_built: string;
+  features: string[];
+  prop_image: string;
+  contact_person: string;
+  contact_email: string;
+  contact_phone: string;
+  prop_bedrooms?: number;
+  prop_bathrooms?: number;
+  prop_land_size?: string;
+}
+
+interface GalleryImage {
+  img_name: string; // This is the gallery image field name
+  [key: string]: any;
+}
+
+export default function ProjectDetailPage() {
+  const params = useParams(); // ✅ Correct way in client component
+  const slug = params?.slug as string;
+  const projectId = slug?.split("-").pop(); // extract ID from slug
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [project, setProject] = useState<Project | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [similarProperties, setSimilarProperties] = useState<Project[]>([]);
+  const router = useRouter();
+
+  // Fetch project data based on the projectId from the URL
+  useEffect(() => {
+    const fetchProjectData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        if (!projectId || isNaN(Number(projectId))) {
+          throw new Error("Invalid project ID");
+        }
+
+        // Fetch both property data and gallery images in parallel
+        const [propertyRes, galleryRes] = await Promise.all([
+          api.get(`/properties/get/${projectId}`),
+          api.get(`/media/get/${projectId}`),
+        ]);
+
+        if (!propertyRes.data) {
+          throw new Error("No property data received");
+        }
+
+        const propertyData = propertyRes.data;
+        const galleryData = galleryRes.data || [];
+
+        if (!propertyData) {
+          throw new Error("Project data not found in response");
+        }
+
+        // Transform data for consistent frontend usage
+        setProject({
+          id: propertyData.property_id || Number(projectId),
+          prop_title: propertyData.prop_title,
+          prop_type: propertyData.prop_type.toLowerCase(),
+          area_location: propertyData.area_location || "Location not specified",
+          prop_desc: propertyData.prop_desc || "No description available",
+          long_description:
+            propertyData.long_description ||
+            propertyData.prop_desc ||
+            "No detailed description available",
+          sale_rent_price:
+            propertyData.sale_rent_price || "Price not available",
+          prop_status: propertyData.prop_status || "Status not specified",
+          prop_year_built: propertyData.prop_year_built || "N/A",
+          features: parseFeatures(propertyData.features),
+          prop_image: propertyData.prop_image || "", // Store the main image
+          contact_person: propertyData.contact_person || "Sales Representative",
+          contact_email: propertyData.contact_email || "info@evernalgroup.com",
+          contact_phone: propertyData.contact_phone || "+91 8697891111",
+          prop_bedrooms: propertyData.prop_bedrooms,
+          prop_bathrooms: propertyData.prop_bathrooms,
+          prop_land_size: propertyData.prop_land_size,
+        });
+
+        setGalleryImages(galleryData);
+      } catch (err) {
+        console.error("Error fetching project:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load project details"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjectData();
+  }, [projectId]);
+
+  // Fetch similar properties based on the project type
+  useEffect(() => {
+    const fetchSimilarProperties = async () => {
+      if (!project?.prop_type) return;
+
+      try {
+        const res = await api.get(`/properties/get/all`, {
+          params: {
+            type: project.prop_type,
+            exclude: project.id,
+            limit: 4,
+          },
+        });
+
+        if (res.data && Array.isArray(res.data)) {
+          setSimilarProperties(res.data);
+        }
+      } catch (err) {
+        console.error("Error fetching similar properties:", err);
+      }
+    };
+
+    if (project) {
+      fetchSimilarProperties();
+    }
+  }, [project]);
+
+  // Helper function to parse features
+  const parseFeatures = (features: any): string[] => {
+    if (!features) return [];
+    if (Array.isArray(features)) return features;
+    if (typeof features === "string")
+      return features.split(",").map((f) => f.trim());
+    return [];
+  };
+
+  const [formData, setFormData] = useState<FormData>({
+    name: "",
+    email: "",
+    phone: "",
+    message: `I'm interested in ${
+      project?.prop_title || "this property"
+    } (ID: ${project?.id || "N/A"}). Please contact me with more information.`,
+  });
+
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (project) {
+      setFormData((prev) => ({
+        ...prev,
+        message: `I'm interested in ${project.prop_title} (ID: ${project.id}). Please contact me with more information.`,
+      }));
+    }
+  }, [project]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.name.trim()) {
+      toast.error("Please enter your name");
+      return false;
+    }
+
+    if (!formData.email.trim()) {
+      toast.error("Please enter your email");
+      return false;
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      toast.error("Please enter a valid email address");
+      return false;
+    }
+
+    if (!formData.phone.trim()) {
+      toast.error("Please enter your phone number");
+      return false;
+    }
+
+    return true;
+  };
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+
+  try {
+    const payload = {
+      ...formData,
+      subject: `Property Inquiry - ${project.prop_title}`,
+      propertyTitle: project.prop_title,
+      propertyId: project.id,
+      inquiryType: "Project Inquiry",
+    };
+
+    // Updated to use your api instance like other calls
+    const response = await api.post("/contact/submit", payload);
+
+    if (response.data) {
+      toast.success("Inquiry submitted successfully!");
+      setIsSubmitted(true);
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        message: `I'm interested in ${project.prop_title} (ID: ${project.id}). Please contact me with more information.`,
+      });
+    } else {
+      throw new Error("No data received in response");
+    }
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.message || 
+                    error.message || 
+                    "Failed to submit inquiry. Please try again.";
+    toast.error(errorMsg);
+    console.error("Submission error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  // Combine main image and gallery images with proper URL construction
+  const getAllImages = () => {
+    const images = [];
+
+    // Add main property image if it exists
+    if (project?.prop_image) {
+      images.push({
+        url: `${MEDIA_BASE_URL}${project.prop_image}`,
+        alt: `${project.prop_title} - Main Image`,
+      });
+    }
+
+    // Add gallery images if they exist
+    if (galleryImages.length > 0) {
+      galleryImages.forEach((img) => {
+        if (img.img_name) {
+          images.push({
+            url: `${MEDIA_BASE_URL}${img.img_name}`,
+            alt: `${project?.prop_title} - Gallery Image`,
+          });
+        }
+      });
+    }
+
+    // Fallback to placeholder if no images
+    return images.length > 0
+      ? images
+      : [
+          {
+            url: "/placeholder.svg",
+            alt: "No image available",
+          },
+        ];
+  };
+
+  const nextImage = () => {
+    const images = getAllImages();
+    setActiveImageIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    const images = getAllImages();
+    setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="pt-20">
+        <div className="container mx-auto px-4 py-8 animate-pulse">
+          {/* Back link */}
+          <div className="h-5 w-32 bg-gray-200 rounded mb-6"></div>
+
+          {/* Header section */}
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div className="h-8 w-2/3 bg-gray-200 rounded mb-3"></div>
+            <div className="flex gap-4 flex-wrap">
+              <div className="h-5 w-40 bg-gray-100 rounded" />
+              <div className="h-5 w-24 bg-gray-100 rounded" />
+              <div className="h-5 w-24 bg-gray-100 rounded" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            {/* Left: Image and Description */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Main image */}
+              <div className="h-[300px] md:h-[400px] lg:h-[500px] bg-gray-300 rounded-xl" />
+
+              {/* Thumbnail gallery */}
+              <div className="grid grid-cols-4 gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-20 bg-gray-200 rounded" />
+                ))}
+              </div>
+
+              {/* Description */}
+              <div className="space-y-3">
+                <div className="h-6 w-40 bg-gray-300 rounded" />
+                <div className="h-4 w-full bg-gray-200 rounded" />
+                <div className="h-4 w-5/6 bg-gray-200 rounded" />
+                <div className="h-4 w-2/3 bg-gray-200 rounded" />
+              </div>
+
+              {/* Floor Plans Placeholder */}
+              <div className="h-40 bg-gray-100 rounded-md" />
+
+              {/* Amenities Placeholder */}
+              <div className="h-32 bg-gray-100 rounded-md" />
+            </div>
+
+            {/* Right: Contact Form */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+                <div className="h-6 w-40 bg-gray-300 rounded" />
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-full bg-gray-200" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-24 bg-gray-200 rounded" />
+                    <div className="h-3 w-16 bg-gray-100 rounded" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="h-4 w-40 bg-gray-200 rounded" />
+                  <div className="h-4 w-40 bg-gray-200 rounded" />
+                </div>
+                <div className="h-8 bg-gray-300 rounded w-full" />
+                <div className="h-8 bg-gray-300 rounded w-full" />
+                <div className="h-8 bg-gray-300 rounded w-full" />
+                <div className="h-20 bg-gray-300 rounded w-full" />
+                <div className="h-10 bg-secondary/40 rounded w-full" />
+              </div>
+            </div>
+          </div>
+
+          {/* Similar Properties */}
+          <div className="mt-12 space-y-4">
+            <div className="h-6 w-48 bg-gray-300 rounded" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm"
+                >
+                  <div className="h-48 bg-gray-300" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                    <div className="h-3 w-1/2 bg-gray-100 rounded" />
+                    <div className="h-4 w-1/3 bg-gray-200 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">{error}</p>
+            <Link
+              href="/projects"
+              className="inline-flex items-center text-secondary mt-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Projects
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">Project not found</p>
+            <Link
+              href="/projects"
+              className="inline-flex items-center text-secondary mt-4"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Projects
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const images = getAllImages();
+  const statusColor =
+    project.prop_status.toLowerCase() === "for sale"
+      ? "bg-lime-500"
+      : project.prop_status.toLowerCase() === "for rent"
+      ? "bg-blue-500"
+      : project.prop_status.toLowerCase() === "sold"
+      ? "bg-red-500"
+      : "bg-amber-500";
+
+  return (
+    <div className="pt-20">
+      <div className="container mx-auto px-4 py-8">
+        <Link
+          href="/projects"
+          className="inline-flex items-center text-gray-600 hover:text-secondary mb-6"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Projects
+        </Link>
+
+        {/* Property Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-lg shadow-sm p-4 mb-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+              {project.prop_title}
+            </h1>
+            <div className="flex items-center flex-wrap gap-3">
+              <div className="flex items-center">
+                <MapPin className="h-5 w-5 text-secondary mr-1" />
+                <span className="text-gray-700">{project.area_location}</span>
+              </div>
+              <Badge
+                className={`${statusColor} hover:${statusColor} text-white`}
+              >
+                {project.prop_status}
+              </Badge>
+              <Badge variant="outline" className="bg-white">
+                {project.prop_type === "commercial"
+                  ? "Commercial"
+                  : "Residential"}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex flex-col items-end">
+            <div className="text-3xl font-bold text-secondary">
+              {project.sale_rent_price.startsWith("₹")
+                ? project.sale_rent_price
+                : `₹ ${project.sale_rent_price}`}
+            </div>
+            <div className="text-sm text-gray-500">
+              {project.prop_status.toLowerCase().includes("rent")
+                ? "per month"
+                : ""}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2">
+            <div className="relative rounded-xl overflow-hidden mb-4 h-[300px] md:h-[400px] lg:h-[500px]">
+              <Image
+                src={images[activeImageIndex].url}
+                alt={images[activeImageIndex].alt}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority
+              />
+
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md z-10"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-2 rounded-full shadow-md z-10"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                    {images.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setActiveImageIndex(index)}
+                        className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                          activeImageIndex === index
+                            ? "bg-sectext-secondary w-10"
+                            : "bg-white"
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {images.length > 1 && (
+              <div className="grid grid-cols-4 gap-2 mb-8">
+                {images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setActiveImageIndex(index)}
+                    className={`relative h-20 rounded-md overflow-hidden transition-all ${
+                      activeImageIndex === index
+                        ? "ring-2 ring-sectext-secondary"
+                        : "opacity-80 hover:opacity-100"
+                    }`}
+                    aria-label={`View image ${index + 1}`}
+                  >
+                    <Image
+                      src={image.url}
+                      alt={image.alt}
+                      fill
+                      className="object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-2">Description</h2>
+                <p className="text-gray-700 mb-4">{project.prop_desc}</p>
+                {project.long_description && (
+                  <p className="text-gray-700">{project.long_description}</p>
+                )}
+              </div>
+              <FloorPlansDisplay propertyId={project.id} />
+
+              <AmenitiesDisplay
+                propertyId={project.id}
+                featuredAmenities={[
+                  "Swimming Pool",
+                  "Gym",
+                  "Parking",
+                  "24/7 Security",
+                  "Elevator",
+                ]}
+              />
+            </div>
+          </div>
+
+          <div className="lg:col-span-1 space-y-6">
+            {/* Contact Card */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden sticky top-24">
+              <div className="bg-secondary text-white p-4">
+                <h3 className="text-xl font-bold">Contact Agent</h3>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-lg">
+                      {project.contact_person}
+                    </h4>
+                    <p className="text-gray-500 text-sm">Evernal Group</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <Phone className="h-5 w-5 text-primary mr-3" />
+                    <a
+                      href={`tel:${project.contact_phone}`}
+                      className="text-gray-700 hover:text-primary transition-colors"
+                    >
+                      {project.contact_phone}
+                    </a>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Mail className="h-5 w-5 text-primary mr-3" />
+                    <a
+                      href={`mailto:${project.contact_email}`}
+                      className="text-gray-700 hover:text-primary transition-colors"
+                    >
+                      {project.contact_email}
+                    </a>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Contact Form */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Name Input */}
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Your Name*
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    />
+                  </div>
+
+                  {/* Email Input */}
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Email Address*
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    />
+                  </div>
+
+                  {/* Phone Input */}
+                  <div>
+                    <label
+                      htmlFor="phone"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Phone Number*
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border rounded-md"
+                      required
+                    />
+                  </div>
+
+                  {/* Message Textarea */}
+                  <div>
+                    <label
+                      htmlFor="message"
+                      className="block text-sm font-medium mb-1"
+                    >
+                      Message
+                    </label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      rows={4}
+                      className="w-full px-3 py-2 border rounded-md"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={isLoading || isSubmitted}
+                    className={`w-full py-3 px-4 rounded-md text-white ${
+                      isLoading
+                        ? "bg-gray-400"
+                        : isSubmitted
+                        ? "bg-green-500"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                  >
+                    {isLoading
+                      ? "Sending..."
+                      : isSubmitted
+                      ? "✓ Inquiry Sent"
+                      : "Send Inquiry"}
+                  </button>
+
+                  {isSubmitted && (
+                    <p className="text-green-600 text-sm mt-2">
+                      Thank you! We'll contact you soon.
+                    </p>
+                  )}
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Similar Properties Section */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold mb-6">Similar Properties</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {similarProperties.length > 0 ? (
+              similarProperties.map((item) => (
+                <Link
+                  href={`/projects/${item.property_id}`}
+                  key={item.property_id}
+                >
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all"
+                  >
+                    <div className="relative h-48">
+                      <Image
+                        src={
+                          item.prop_image
+                            ? `${MEDIA_BASE_URL}${item.prop_image}`
+                            : "/placeholder.svg"
+                        }
+                        alt={item.prop_title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <Badge className="bg-secondary text-white">
+                          {item.prop_status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-1 line-clamp-1">
+                        {item.prop_title}
+                      </h3>
+                      <div className="flex items-center text-gray-500 text-sm mb-2">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span>{item.area_location}</span>
+                      </div>
+                      <div className="text-secondary font-bold">
+                        ₹ {item.sale_rent_price}
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              ))
+            ) : (
+              <p className="text-gray-500">No similar properties found.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
