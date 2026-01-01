@@ -9,7 +9,9 @@ export const MEDIA_BASE_URL = ROOT_BASE_URL
 const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
-})
+}) 
+
+
 
 // Request interceptor to add token to headers
 api.interceptors.request.use(
