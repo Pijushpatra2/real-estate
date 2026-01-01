@@ -43,6 +43,7 @@ export const handleGetAllProperties = async (req, res) => {
 export const handleGetPropertyById = async (req, res) => {
   try {
     const property_id = req.params.id;  // corrected
+
     const property = await getPropertyById(property_id);
     if (!property) {
       return res.status(404).json({ error: 'Property not found' });
@@ -50,6 +51,7 @@ export const handleGetPropertyById = async (req, res) => {
     res.status(200).json(property);
   } catch (error) {
     console.error('Error fetching property:', error);
+
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -72,6 +74,7 @@ export const handleCreateProperty = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating property:', error);
+
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -90,6 +93,7 @@ export const handleUpdateProperty = async (req, res) => {
     const result = await updateProperty(property_id, updatedData);
 
     if (result.affectedRows === 0) {
+      
       return res.status(404).json({ error: 'Property not found' });
     }
 

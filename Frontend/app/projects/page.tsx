@@ -194,6 +194,8 @@ export default function ProjectsPage() {
               />
             </div>
 
+
+
             <Select value={selectedType} onValueChange={setSelectedType}>
               <SelectTrigger>
                 <SelectValue placeholder="Property Type" />
